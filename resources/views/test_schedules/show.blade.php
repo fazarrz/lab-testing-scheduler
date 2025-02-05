@@ -34,12 +34,18 @@
                         <h6>{{ $item->nama_subitem }}</h6>
                         <p><strong>Waktu Mulai:</strong> {{ $item->start_time }}</p>
                         <p><strong>Waktu Selesai:</strong> {{ $item->end_time }}</p>
-                        <p><strong>Orang</strong> {{ $item->user->name }}</p>
-                 
-                        <p><strong>Ket:</strong> {{ $item->status }}</p>
+                        <p><strong>Orang:</strong> {{ $item->user->name }}</p>
+                        <p><strong>Status:</strong> {{ $item->status }}</p>
 
+                        <p><strong>Gambar Subitem:</strong></p>
                         @if ($item->image_detail)
-                            <img src="{{ asset('storage/' . $item->image_detail) }}" alt="Gambar Subitem" style="max-width: 100px; height: auto;">
+                            @php
+                                $imagePaths = json_decode($item->image_detail); // Mengubah JSON menjadi array
+                            @endphp
+
+                            @foreach ($imagePaths as $imagePath)
+                                <img src="{{ asset('storage/' . $imagePath) }}" alt="Gambar Subitem" style="max-width: 100px; height: auto; margin-right: 5px;">
+                            @endforeach
                         @else
                             <p>Tidak ada gambar</p>
                         @endif

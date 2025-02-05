@@ -17,7 +17,7 @@ use App\Exports\TestSchedulesExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 Route::get('/', function () {
-    return redirect('/test-schedules');
+    return redirect('/login');
 });
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
