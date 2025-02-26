@@ -40,6 +40,12 @@
         </form>
         <!-- Navbar-->
         <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
+            <li class="nav-item">
+                <a href="#" class="nav-link" id="notificationBell" data-bs-toggle="modal" data-bs-target="#notificationModal">
+                    <i class="fas fa-bell"></i>
+                    <span id="notificationCount" class="badge bg-danger">0</span> <!-- Example count -->
+                </a>
+            </li>
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-user fa-fw"></i>
@@ -48,9 +54,6 @@
                     ?>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                    <li><a class="dropdown-item" href="#!">Settings</a></li>
-                    <li><a class="dropdown-item" href="#!">Activity Log</a></li>
-                    <li><hr class="dropdown-divider" /></li>
                     <li>
                         <a class="dropdown-item" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                             Logout
@@ -63,6 +66,23 @@
             </li>
         </ul>
     </nav>
+    <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="notificationModalLabel">Notifikasi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="notificationContent">
+                    <!-- Notifications will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <!-- Delete all notifications button -->
+                    <button id="deleteAllNotifications" class="btn btn-danger w-100">Hapus Notifikasi</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="layoutSidenav">
         <div id="layoutSidenav_nav">
             <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
@@ -123,5 +143,80 @@
     
     <!-- Bootstrap Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Function to fetch notifications from the file and display them in the modal
+        $('#notificationBell').on('click', function() {
+            // Fetch the notifications content using AJAX
+            $.ajax({
+                url: '{{ route('fetch.notifications') }}', // Define this route to get the notifications content
+                type: 'GET',
+                success: function(response) {
+                    $('#notificationContent').text(response); // Display the content in the modal
+                },
+                error: function() {
+                    $('#notificationContent').text('Failed to load notifications.');
+                }
+            });
+        });
+    
+        // Fetch the notification count on page load
+        $(document).ready(function() {
+            $.ajax({
+                url: '{{ route('count.notifications') }}',  // URL to fetch the notification count
+                type: 'GET',
+                success: function(response) {
+                    // Update the notification badge with the count
+                    $('#notificationCount').text(response.count);
+                },
+                error: function() {
+                    // In case of error, set the count to 0
+                    $('#notificationCount').text('0');
+                }
+            });
+        });
+
+        // Handle the click event for deleting all notifications
+        $(document).on('click', '#deleteAllNotifications', function() {
+            // Confirm the action with the user
+            if (confirm('Anda yakin ingin menghapus semua notifikasi?')) {
+                // Make an AJAX request to delete all notifications
+                $.ajax({
+                    url: '{{ route('delete.notifications') }}',  // The route to delete notifications
+                    type: 'GET',
+                    success: function(response) {
+                        // If successful, show a success message and clear notifications content
+                        if (response.success) {
+                            alert(response.message);
+                            $('#notificationContent').html(''); // Clear the notifications content
+                            $('#notificationCount').text('0'); // Update notification count to 0
+                            
+                            // Fetch the updated notification count
+                            $.ajax({
+                                url: '{{ route('count.notifications') }}',  // The route to get the updated count
+                                type: 'GET',
+                                success: function(countResponse) {
+                                    // Update the notification count with the latest count
+                                    $('#notificationCount').text(countResponse.count);
+                                },
+                                error: function() {
+                                    // In case of error, set the count to 0
+                                    $('#notificationCount').text('0');
+                                }
+                            });
+                        } else {
+                            // If there's an issue, show an error message
+                            alert(response.message);
+                        }
+                    },
+                    error: function() {
+                        // If an error occurs, show an error message
+                        alert('Failed to delete notifications.');
+                    }
+                });
+            }
+        });
+
+    </script>
+    
 </body>
 </html>

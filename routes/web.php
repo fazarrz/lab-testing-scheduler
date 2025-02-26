@@ -10,6 +10,7 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\NotificationController;
 
 // Rute Export dan Import
 use App\Exports\UsersExport;
@@ -41,6 +42,11 @@ Route::middleware(['jwt.auth'])->group(function () {
 
     Route::middleware(['role:admin,engineer'])->group(function () {
         Route::get('/admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+        Route::get('/fetch-notifications', [NotificationController::class, 'fetchNotifications'])->name('fetch.notifications');
+        Route::get('/count-notifications', [NotificationController::class, 'countNotifications'])->name('count.notifications');
+        Route::get('/delete-all-notifications', [NotificationController::class, 'deleteAllNotifications'])->name('delete.notifications');
+
+
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
         Route::get('/test_schedules/create', [TestScheduleController::class, 'create'])->name('test_schedules.create');
@@ -52,7 +58,7 @@ Route::middleware(['jwt.auth'])->group(function () {
         Route::get('export-test-schedules', function () {
             return Excel::download(new TestSchedulesExport, 'test_schedules.xlsx');
         })->name('test_schedules.export');
-        Route::get('/test_schedules/export-pdf', [TestScheduleController::class, 'exportPDF'])->name('test_schedules.export_pdf');
+        Route::get('/schedule_archive/export-pdf', [ArchiveController::class, 'exportPDF'])->name('schedule_archive.export_pdf');
 
 
         Route::get('/schedule_archive', [ArchiveController::class, 'index'])->name('schedule_archive.index');

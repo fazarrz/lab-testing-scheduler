@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('test_name');
             $table->datetime('start_time');
             $table->datetime('end_time');
+            $table->text('description');
             $table->string('image_path')->nullable();
             $table->timestamps();
             $table->enum('status', ['Sedang Berjalan', 'Selesai', 'Tunda'])->default('Sedang Berjalan');
@@ -30,6 +31,7 @@ return new class extends Migration
             $table->string('nama_subitem');
             $table->datetime('start_time');
             $table->datetime('end_time');
+            $table->text('description');
             $table->string('image_detail')->nullable();
             $table->enum('status', ['Selesai', 'Sedang Berjalan', 'Tunda'])->default('Sedang Berjalan');
             $table->timestamps();

@@ -105,7 +105,7 @@
                                 <a href="{{ route('test_schedules.show', $schedule->id) }}" class="btn btn-info btn-sm">
                                     <i class="fas fa-eye"></i> Detail
                                 </a>
-                                <form action="{{ route('test_schedules.destroy', $schedule->id) }}" method="POST" style="display:inline;">
+                                <form action="{{ route('test_schedules.destroy', $schedule->id) }}" method="POST" style="display:inline;" onsubmit="return confirmDelete();">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-danger btn-sm">
@@ -132,5 +132,9 @@
             "responsive": true
         });
     });
+
+    function confirmDelete() {
+        return confirm("Apakah Anda yakin ingin menghapus jadwal ini?");
+    }
 </script>
 @endsection

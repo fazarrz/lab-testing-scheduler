@@ -43,6 +43,22 @@
                     value="{{ \Carbon\Carbon::parse($schedule->end_time)->format('Y-m-d\TH:i') }}" required>
             </div>
 
+            
+            <div class="mb-3">
+                <label for="cc" class="form-label">CC</label>
+                <input type="number" class="form-control" id="cc" name="cc" value="{{ old('cc', $schedule->cc) }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="rh" class="form-label">RH</label>
+                <input type="number" class="form-control" id="rh" name="rh" value="{{ old('rh', $schedule->rh) }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="voltase" class="form-label">Voltase</label>
+                <input type="number" class="form-control" id="voltase" name="voltase" value="{{ old('voltase', $schedule->voltase) }}" required>
+            </div>
+
             <div class="mb-3">
                 <label for="image" class="form-label">Upload Gambar</label>
                 <input type="file" name="image" class="form-control">
@@ -142,6 +158,20 @@
                 </div>
                 <div class="col-md-4">
                     <input type="file" name="subitems[${index}][image_detail][]" class="form-control" multiple>
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-md-4">
+                    <label for="cc" class="form-label">CC</label>
+                    <input type="number" class="form-control" name="subitems[${index}][cc]" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="rh" class="form-label">RH</label>
+                    <input type="number" class="form-control" name="subitems[${index}][rh]" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="voltase" class="form-label">Voltase</label>
+                    <input type="number" class="form-control" name="subitems[${index}][voltase]" required>
                 </div>
             </div>
             <div class="d-flex mb-2">

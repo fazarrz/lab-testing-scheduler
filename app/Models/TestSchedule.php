@@ -13,9 +13,10 @@ class TestSchedule extends Model
     protected $primaryKey='id';
 
     protected $fillable = [
-        'test_name',  // Kolom yang diizinkan untuk mass assignment
+        'test_name',  // Kolom yang diizinkan untuk mass assignmen
         'start_time', // Tambahkan kolom start_time
         'end_time',   // Tambahkan kolom end_time
+        'description',
         'image_path',
         'status'
     ];

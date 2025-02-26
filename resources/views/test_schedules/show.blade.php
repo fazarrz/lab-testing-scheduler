@@ -27,6 +27,10 @@
                 <p>Tidak ada gambar</p>
             @endif
 
+            <p><strong>CC:</strong> {{ $schedule->cc ?? 'Tidak Tersedia' }}</p>
+            <p><strong>RH:</strong> {{ $schedule->rh ?? 'Tidak Tersedia' }}</p>
+            <p><strong>Voltase:</strong> {{ $schedule->voltase ?? 'Tidak Tersedia' }}</p>
+
             <h5 class="mt-4">Subitems</h5>
             @foreach ($schedule->items as $item)
                 <div class="card mb-3">
@@ -36,6 +40,11 @@
                         <p><strong>Waktu Selesai:</strong> {{ $item->end_time }}</p>
                         <p><strong>Orang:</strong> {{ $item->user->name }}</p>
                         <p><strong>Status:</strong> {{ $item->status }}</p>
+
+                         <!-- Menampilkan cc, rh, dan voltase pada item -->
+                         <p><strong>CC:</strong> {{ $item->cc ?? 'Tidak Tersedia' }}</p>
+                         <p><strong>RH:</strong> {{ $item->rh ?? 'Tidak Tersedia' }}</p>
+                         <p><strong>Voltase:</strong> {{ $item->voltase ?? 'Tidak Tersedia' }}</p>
 
                         <p><strong>Gambar Subitem:</strong></p>
                         @if ($item->image_detail)

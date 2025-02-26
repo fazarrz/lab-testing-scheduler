@@ -24,7 +24,20 @@
             <div class="mb-3">
                 <label for="test_name" class="form-label">Nama Pengujian</label>
                 <input type="text" class="form-control" name="test_name" id="test_name" required>
+            </div>       
+            <div class="mb-3">
+                <label for="cc" class="form-label">CC</label>
+                <input type="number" class="form-control" name="cc" id="cc" required>
             </div>
+            <div class="mb-3">
+                <label for="rh" class="form-label">RH</label>
+                <input type="number" class="form-control" name="rh" id="rh" required>
+                <p>Maksimal : 500RH</p>
+            </div>
+            <div class="mb-3">
+                <label for="voltase" class="form-label">Voltase</label>
+                <input type="number" class="form-control" name="voltase" id="voltase" required>
+            </div>     
             <div class="mb-3">
                 <label for="start_time" class="form-label">Waktu Mulai</label>
                 <input type="datetime-local" class="form-control" name="start_time" id="start_time" required>
@@ -77,6 +90,15 @@
             <div class="row">
                 <div class="col-md-6 mb-2">
                     <input type="text" name="subitems[nama_subitem][]" class="form-control" placeholder="Nama Subitem" required>
+                </div>
+                 <div class="col-md-4 mb-2">
+                    <input type="number" name="subitems[cc][]" class="form-control" placeholder="CC" required>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <input type="number" name="subitems[rh][]" class="form-control" placeholder="RH" required>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <input type="number" name="subitems[voltase][]" class="form-control" placeholder="Voltase" required>
                 </div>
                 <div class="col-md-3 mb-2">
                     <input type="datetime-local" name="subitems[start_time][]" class="form-control" required>

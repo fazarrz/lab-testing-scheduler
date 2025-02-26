@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\Item;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class TestScheduleController extends Controller
 {
@@ -54,14 +55,29 @@ class TestScheduleController extends Controller
         $imagePath = $request->file('image') ? $request->file('image')->store('images', 'public') : null;
         $status = 'Sedang Berjalan';
     
+        // Assuming 'cc', 'rh', and 'voltase' are inputs under 'subitems', modify this:
+        $cc = $request->input('cc');
+        $rh = $request->input('rh');
+        $voltase = $request->input('voltase');
+        $deskripsi = "cc = {$cc}, rh = {$rh}, voltase = {$voltase}";
+    
+        \Log::info("deskripsi : ". $deskripsi);
+        
         // Membuat entri baru di tabel test_schedules
         $schedule = TestSchedule::create([
             'test_name' => $request->input('test_name'),
             'start_time' => $request->input('start_time'),
             'end_time' => $request->input('end_time'),
+            'description' => $deskripsi,
             'image_path' => $imagePath,
             'status' => $status,
         ]);
+
+        $notificationMessage = "{$schedule->test_name} dibuat pada " . Carbon::now()->toDateTimeString() . "\n";
+        
+        // Using Laravel's Storage facade to append the message
+        Storage::disk('public')->append('notifications.txt', $notificationMessage . "\n\n");
+
     
         // Menyimpan subitems ke tabel test_schedules_detail
         $subitemsDetails = '';  // Menyimpan detail subitems untuk pesan Telegram
@@ -93,20 +109,27 @@ class TestScheduleController extends Controller
                 // Jika ada gambar yang berhasil diupload, simpan array path-nya
                 $subitemImagePaths = json_encode($subitemImagePaths); // Menyimpan path dalam format JSON
     
+                // Assuming 'cc', 'rh', 'voltase' are part of 'subitems'
+                $ccSubitem = $request->input("subitems.cc")[$key] ?? '';
+                $rhSubitem = $request->input("subitems.rh")[$key] ?? '';
+                $voltaseSubitem = $request->input("subitems.voltase")[$key] ?? '';
+                $deskripsiSubItem = "cc = {$ccSubitem}, rh = {$rhSubitem}, voltase = {$voltaseSubitem}";
+    
                 // Menyimpan data subitem
                 $item = Item::create([
                     'test_schedule_id' => $schedule->id,
                     'user_id' => auth()->user()->id,
                     'nama_subitem' => $namaSubitem,
-                    'start_time' => $request->input('subitems')['start_time'][$key],
-                    'end_time' => $request->input('subitems')['end_time'][$key],
+                    'start_time' => $request->input('subitems.start_time')[$key],
+                    'end_time' => $request->input('subitems.end_time')[$key],
+                    'description' => $deskripsiSubItem,
                     'image_detail' => $subitemImagePaths,  // Menyimpan path gambar dalam bentuk JSON
                 ]);
     
                 // Menambahkan detail subitem ke dalam pesan
                 $subitemsDetails .= "\n- Subitem: {$namaSubitem}\n";
-                $subitemsDetails .= "  Waktu Mulai: {$request->input('subitems')['start_time'][$key]}\n";
-                $subitemsDetails .= "  Waktu Selesai: {$request->input('subitems')['end_time'][$key]}\n";
+                $subitemsDetails .= "  Waktu Mulai: {$request->input('subitems.start_time')[$key]}\n";
+                $subitemsDetails .= "  Waktu Selesai: {$request->input('subitems.end_time')[$key]}\n";
             }
         }
     
@@ -132,26 +155,59 @@ class TestScheduleController extends Controller
     
 
 
-    
-
-
     public function show($id)
     {
         $schedule = TestSchedule::with('items')->findOrFail($id); // Load the schedule with its items
+        $pattern = '/cc\s*=\s*(\d+),\s*rh\s*=\s*(\d+),\s*voltase\s*=\s*(\d+)/';
+        if (preg_match($pattern, $schedule->description, $matches)) {
+            $schedule->cc = $matches[1];
+            $schedule->rh = $matches[2];
+            $schedule->voltase = $matches[3];
+        }
+    
+        // Pisahkan deskripsi untuk setiap subitem
+        foreach ($schedule->items as $item) {
+            if (preg_match($pattern, $item->description, $matches)) {
+                $item->cc = $matches[1];
+                $item->rh = $matches[2];
+                $item->voltase = $matches[3];
+            }
+        }
+        
         return view('test_schedules.show', compact('schedule')); // Pass the schedule to the view
     }
 
     // Edit jadwal pengujian
     public function edit($id)
     {
-        $schedule = TestSchedule::with('items')->findOrFail($id); // Include subitems
+        $schedule = TestSchedule::with('items')->findOrFail($id); // Ambil jadwal pengujian beserta subitems
+    
+        // Pisahkan deskripsi test_schedule untuk mendapatkan cc, rh, voltase
+        $pattern = '/cc\s*=\s*(\d+),\s*rh\s*=\s*(\d+),\s*voltase\s*=\s*(\d+)/';
+        if (preg_match($pattern, $schedule->description, $matches)) {
+            $schedule->cc = $matches[1];
+            $schedule->rh = $matches[2];
+            $schedule->voltase = $matches[3];
+        }
+    
+        // Pisahkan deskripsi untuk setiap subitem
+        foreach ($schedule->items as $item) {
+            if (preg_match($pattern, $item->description, $matches)) {
+                $item->cc = $matches[1];
+                $item->rh = $matches[2];
+                $item->voltase = $matches[3];
+            }
+        }
+    
         return view('test_schedules.edit', compact('schedule'));
     }
-
+    
+    
     public function update(Request $request, $id)
     {
         \Log::info($request->all());
     
+        // Validasi input request
         $request->validate([
             'test_name' => 'required|string|max:255',
             'start_time' => 'required|date',
@@ -163,65 +219,79 @@ class TestScheduleController extends Controller
             'subitems.*.end_time' => 'required|date|after:subitems.*.start_time',
             'subitems.*.image_detail.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Image array validation
             'subitems.*.captured_image_detail.*' => 'nullable|file|mimes:jpeg,png',
+            'cc' => 'nullable|string|max:255',
+            'rh' => 'nullable|string|max:255',
+            'voltase' => 'nullable|string|max:255',
         ]);
     
+        // Temukan jadwal tes berdasarkan ID
         $schedule = TestSchedule::findOrFail($id);
     
-        // Handle main image update
-        if ($request->hasFile('image')) {
-            if ($schedule->image_path && Storage::exists('public/' . $schedule->image_path)) {
-                Storage::delete('public/' . $schedule->image_path);
-            }
-            $schedule->image_path = $request->file('image')->store('images', 'public');
-        }
+        // Ambil data cc, rh, voltase dari request
+        $cc = $request->input('cc');
+        $rh = $request->input('rh');
+        $voltase = $request->input('voltase');
     
-        // Update the schedule data
-        // $updatedSchedule = false;
-        // if ($schedule->start_time != $request->input('start_time') || $schedule->end_time != $request->input('end_time')) {
-        //     $updatedSchedule = true;
-        //     // Send notification if schedule's start_time or end_time is updated
-        //     $this->sendTelegramNotification(env('TELEGRAM_CHAT_ID'), "Jadwal Tes diperbarui:\nNama Tes: {$schedule->test_name}\nWaktu Mulai: {$request->input('start_time')}\nWaktu Selesai: {$request->input('end_time')}");
-        // }
+        // Deskripsi utama untuk test schedule
+        $deskripsi = "cc = {$cc}, rh = {$rh}, voltase = {$voltase}";
     
+        // Update deskripsi pada jadwal tes
         $schedule->update([
             'test_name' => $request->input('test_name'),
             'start_time' => $request->input('start_time'),
             'end_time' => $request->input('end_time'),
             'status' => $request->input('status'),
+            'description' => $deskripsi, // Deskripsi dengan cc, rh, voltase
         ]);
+    
+        // Handle main image update
+        if ($request->hasFile('image')) {
+            // Hapus image lama jika ada
+            if ($schedule->image_path && Storage::exists('public/' . $schedule->image_path)) {
+                Storage::delete('public/' . $schedule->image_path);
+            }
+            // Upload image baru
+            $schedule->image_path = $request->file('image')->store('images', 'public');
+        }
     
         // Update subitems
         if ($request->has('subitems')) {
             $existingSubitems = $schedule->items->keyBy('id');
-
             \Log::info($existingSubitems);
             $updatedSubitemIds = [];
     
             foreach ($request->input('subitems') as $key => $subitem) {
                 $subitemId = $subitem['id'] ?? null;
+    
+                // Deskripsi untuk subitem
+                $ccSubitem = $subitem['cc'] ?? $cc; // Jika tidak ada cc di subitem, pakai cc utama
+                $rhSubitem = $subitem['rh'] ?? $rh; // Sama seperti cc
+                $voltaseSubitem = $subitem['voltase'] ?? $voltase; // Sama seperti voltase
+                $deskripsiSubitem = "cc = {$ccSubitem}, rh = {$rhSubitem}, voltase = {$voltaseSubitem}"; // Deskripsi subitem
+    
                 $subitemData = [
                     'user_id' => auth()->user()->id,
                     'nama_subitem' => $subitem['nama_subitem'],
                     'start_time' => $subitem['start_time'],
                     'end_time' => $subitem['end_time'],
                     'test_schedule_id' => $schedule->id,
+                    'description' => $deskripsiSubitem, // Deskripsi subitem
                 ];
     
-                // Handle multiple image details (if any)
+                // Menangani image detail untuk subitem
                 $subitemImagePaths = [];
     
                 // Handle multiple captured images (if any)
                 if ($request->hasFile("subitems.$key.captured_image_detail")) {
                     $capturedImages = $request->file("subitems.$key.captured_image_detail");
     
-                    // Check if multiple files are provided
+                    // Cek jika ada beberapa gambar yang di-upload
                     if (is_array($capturedImages)) {
                         foreach ($capturedImages as $capturedImage) {
-                            // Store each captured image in the correct folder
                             $subitemImagePaths[] = $capturedImage->store('images/details', 'public');
                         }
                     } else {
-                        // If a single image is uploaded, store it
+                        // Jika hanya ada satu gambar, upload
                         $subitemImagePaths[] = $capturedImages->store('images/details', 'public');
                     }
                 }
@@ -230,77 +300,39 @@ class TestScheduleController extends Controller
                 if ($request->hasFile("subitems.$key.image_detail")) {
                     $imageDetails = $request->file("subitems.$key.image_detail");
     
-                    // Check if multiple files are provided
+                    // Cek jika ada beberapa gambar yang di-upload
                     if (is_array($imageDetails)) {
                         foreach ($imageDetails as $imageDetail) {
-                            // Store each image detail in the correct folder
                             $subitemImagePaths[] = $imageDetail->store('images/details', 'public');
                         }
                     } else {
-                        // If a single image is uploaded, store it
+                        // Jika hanya ada satu gambar, upload
                         $subitemImagePaths[] = $imageDetails->store('images/details', 'public');
                     }
                 }
     
-                // Log the image paths for debugging
-                \Log::info("Data gambar baru saat menambahkan subitem baru: " . json_encode($subitemImagePaths));
-    
-                // Save the paths as an array (without JSON encoding)
+                // Jika ada gambar yang diupload, simpan pathnya dalam bentuk JSON
                 if (!empty($subitemImagePaths)) {
                     $subitemData['image_detail'] = json_encode($subitemImagePaths); // Encode as JSON
                 }
     
-                // If there's a subitem ID, update the existing subitem
+                // Jika subitem ada ID (berarti akan diupdate)
                 if ($subitemId) {
                     $existingSubitem = $existingSubitems->get($subitemId);
                     if ($existingSubitem) {
-
-                        \Log::info("existingSubitem waktu" . $existingSubitem->start_time);
-                        \Log::info("input start_time: " . $subitem['start_time']);
-                        $sendNotification = false;
-                        if ($existingSubitem->start_time != $subitem['start_time'] || $existingSubitem->end_time != $subitem['end_time']) {
-                            // Only send notification if start_time or end_time have changed
-                            $sendNotification = true;
-                        }
-    
-                        if (!empty($subitemImagePaths)) {
-                            if ($existingSubitem->image_detail) {
-                                // Decode the JSON string into an array
-                                $imagePaths = json_decode($existingSubitem->image_detail, true);
-    
-                                // Ensure it's an array before proceeding
-                                if (is_array($imagePaths)) {
-                                    foreach ($imagePaths as $path) {
-                                        Storage::delete('public/' . $path); // Delete each image
-                                    }
-                                }
-                            }
-                        }
-    
-                        // Update the subitem data
+                        // Update subitem
                         $existingSubitem->update($subitemData);
-
-                        if ($sendNotification) {
-                            $this->sendTelegramNotification(env('TELEGRAM_CHAT_ID'), "Subitem diperbarui:\nSubitem: {$subitem['nama_subitem']}\nWaktu Mulai: {$subitem['start_time']}\nWaktu Selesai: {$subitem['end_time']}");
-                        }
-    
                         $updatedSubitemIds[] = $subitemId;
-    
-                       
                     }
                 } else {
-                    // If no subitem ID, create a new subitem
-                    if (!empty($subitemImagePaths)) {
-                        $subitemData['image_detail'] = json_encode($subitemImagePaths); // Encode images as JSON if there are any
-                    }
+                    // Jika tidak ada ID, berarti ini adalah subitem baru
                     Item::create($subitemData);
-    
-                    // Send notification if a new subitem is added
+                    // Kirim notifikasi jika subitem baru ditambahkan
                     $this->sendTelegramNotification(env('TELEGRAM_CHAT_ID'), "Subitem baru ditambahkan:\nSubitem: {$subitem['nama_subitem']}\nWaktu Mulai: {$subitem['start_time']}\nWaktu Selesai: {$subitem['end_time']}");
                 }
             }
     
-            // Delete subitems that weren't updated
+            // Hapus subitem yang tidak terupdate
             $subitemsToDelete = $existingSubitems->whereNotIn('id', $updatedSubitemIds);
             foreach ($subitemsToDelete as $subitem) {
                 if ($subitem->image_detail) {

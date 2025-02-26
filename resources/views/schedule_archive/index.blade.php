@@ -66,7 +66,7 @@
             </button>
             <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="{{ route('test_schedules.export') }}">Export Excel</a></li>
-                <li><a class="dropdown-item" href="{{ route('test_schedules.export_pdf') }}">Export PDF</a></li>
+                <li><a class="dropdown-item" href="{{ route('schedule_archive.export_pdf') }}">Export PDF</a></li>
             </ul>
         </div>
     </div>

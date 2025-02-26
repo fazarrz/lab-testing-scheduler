@@ -21,7 +21,8 @@ class Item extends Model
         'user_id',
         'nama_subitem',
         'start_time',
-        'end_time',   
+        'end_time',
+        'description',
         'image_detail',
         'status',
     ];
